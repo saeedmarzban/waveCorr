@@ -1,5 +1,5 @@
 # waveCorr
-waveCorr policy gradient model for portfolio management
+This is the source code of the paper entitled "WaveCorr: Correlation-savvy Deep Reinforcement Learning for Portfolio Management".
 
 # Running the project
 wavecorr_run.py is the main file to run the project. 
