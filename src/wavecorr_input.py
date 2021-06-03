@@ -33,15 +33,20 @@ class loadInput:
             
         self.x_dates = self.x_dates[0:new_d]        
         
-        self.x = self.x[0:-10,:,:]
-        self.y = self.y[0:-10,:]
-        self.x_dates = self.x_dates[0:-10]
+        if dataset_name == 'can' or dataset_name == 'us':
+            self.x = self.x[0:4220,:,:]
+            self.y = self.y[0:4220,:]
+            self.x_dates = self.x_dates[0:4220]
+        else:            
+            self.x = self.x[0:-10,:,:]
+            self.y = self.y[0:-10,:]
+            self.x_dates = self.x_dates[0:-10]
         
         # Normalize the input data
         if data_normalization == normalization_mode.standard_norm:
             x_mean = np.mean(self.x, axis=1, keepdims=True)
-            x_std = np.std(self.x, axis=1, keepdims=True)
-            self.x = np.divide((self.x - x_mean), (x_std) + 1e-8)
+            x_std = np.std(self.x.astype(float), axis=1, keepdims=True)
+            self.x = np.divide((self.x - x_mean), (x_std) + 1e-8)/10
         elif data_normalization == normalization_mode.capped_norm:
             x_min = np.min(self.x, axis=1, keepdims=True)
             x_max = np.max(self.x, axis=1, keepdims=True)

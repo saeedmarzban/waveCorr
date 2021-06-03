@@ -122,23 +122,54 @@ class neuralNetwork:
             reward = tf.log(cum_ret_tradefee)
             return mIn, wIn, y, tf.squeeze(action, 3), reward, keep_prob, is_train
         
-    def corrLayer(self,inputTensor,name='',trainable=True,reuse=False,padding='VALID',activation=activation_functions.relu):
+    def corrLayer(self,inputTensor,name='',trainable=True,reuse=False,padding='VALID',activation=activation_functions.relu,keep_prob=.5):
+        
         self.initializeNN([1, self.number_of_stocks + 1, inputTensor._shape_as_list()[3], 1],name=name,trainable=trainable,reuse=False)
 
         for iii in range(self.number_of_stocks):
             if iii == 0:
                 xx = tf.concat([tf.expand_dims(inputTensor[:,:,iii,:],2),inputTensor],axis=2)
+                xx = tf.nn.dropout(xx, rate=1 - keep_prob, seed=self.seed)
                 out = self.causalConv(xx,filter_shape = (1, self.number_of_stocks+1,xx._shape_as_list()[3],1),name=name,reuse=True)
 
             else:
                 xx = tf.concat([tf.expand_dims(inputTensor[:,:,iii,:],2),inputTensor],axis=2)
+                xx = tf.nn.dropout(xx, rate=1 - keep_prob, seed=self.seed)
                 x_corr = self.causalConv(xx,filter_shape = (1, self.number_of_stocks+1,xx._shape_as_list()[3],1),name=name,reuse=True)
                 out = tf.concat([out, x_corr], 2)
-
+        
+        
         outputTensor = tf.concat([inputTensor, out], 3)
         return outputTensor 
     
-
+    
+    def waveCorrBlock(self,x,kernel_size,depth,dilation,keep_prob,block_counter):
+        
+        x_short = tf.zeros(shape = x._shape_as_list())
+        
+        if x._shape_as_list()[1] - self.planning_horizon >= 4 * dilation:        
+            x_short = x
+            names = ['wave_1_'+str(block_counter),'corr_1_'+str(block_counter),'wave_2_'+str(block_counter),'corr_2_'+str(block_counter),'short_'+str(block_counter)]
+                
+            x = self.dilatedCausalConv(x,filter_shape=(kernel_size,1,x._shape_as_list()[3],depth),name=names[0],dilation=dilation)
+            x = tf.nn.dropout(x, rate=1 - keep_prob, seed=self.seed)
+            
+            # x = self.corrLayer(x,names[1],keep_prob=keep_prob)
+            
+            x = self.dilatedCausalConv(x,filter_shape=(kernel_size,1,x._shape_as_list()[3],int(self.net_depth * 1)),name=names[2],dilation=dilation)
+            x = tf.nn.dropout(x, rate=1 - keep_prob, seed=self.seed)
+    
+            x = self.corrLayer(x,names[3],keep_prob=keep_prob)
+            
+            # The 1*1 residual connection
+            ###################################################################
+            xx = self.causalConv(x_short[:, int(4*dilation):, :, :],filter_shape = (1,1,x_short._shape_as_list()[3],x._shape_as_list()[3]),name=names[4],activation=activation_functions.linear)
+            x = x + xx
+            x = tf.nn.relu(x)
+            
+        return x , x_short
+    
+    
     def waveCorr(self, inputTensor, rates):
         with tf.name_scope(self.scope):
             is_train = tf.compat.v1.placeholder(tf.bool, name="is_train")
@@ -153,93 +184,40 @@ class neuralNetwork:
 
             kernel_size = 3
 
-            x = mIn
-
-            x_short1 = x
+            x = mIn            
             
-            # waveCorr block 1
+            # waveCorr blocks (Depending on the lookback window, the number of active blocks change. For a lookback window of 32 days, only 3 blocks are activated)
             ###################################################################
             
-            x = self.dilatedCausalConv(x,filter_shape=(kernel_size,1,x._shape_as_list()[3],int(self.net_depth * 1)),name='wave1',dilation=1)
-            x = tf.nn.dropout(x, rate=1 - keep_prob, seed=self.seed)
+            x, x_short1 = self.waveCorrBlock(x,kernel_size,self.net_depth*1,dilation=1,keep_prob=keep_prob,block_counter=1)            
+            x, x_short2 = self.waveCorrBlock(x,kernel_size,self.net_depth*2,dilation=2,keep_prob=keep_prob,block_counter=2)            
+            x, x_short3 = self.waveCorrBlock(x,kernel_size,self.net_depth*2,dilation=4,keep_prob=keep_prob,block_counter=3)            
+            x, x_short4 = self.waveCorrBlock(x,kernel_size,self.net_depth*2,dilation=4,keep_prob=keep_prob,block_counter=4)            
+            x, x_short5 = self.waveCorrBlock(x,kernel_size,self.net_depth*2,dilation=4,keep_prob=keep_prob,block_counter=5)
             
-            x = self.dilatedCausalConv(x,filter_shape=(kernel_size,1,x._shape_as_list()[3],int(self.net_depth * 1)),name='wave2',dilation=1)
-            x = tf.nn.dropout(x, rate=1 - keep_prob, seed=self.seed)
-
-            x = self.corrLayer(x,'corr1')
+            ###################################################################
             
-            xx = self.causalConv(x_short1[:, 4:, :, :],filter_shape = (1,1,x_short1._shape_as_list()[3],x._shape_as_list()[3]),name='short1',activation=activation_functions.linear)
-            x = x + xx
+            # The causal convolution layer to adjust the receptive field to the length of the lookback window
+            ###################################################################
+            if x._shape_as_list()[1] > self.planning_horizon:
+                last_conv = x._shape_as_list()[1] - self.planning_horizon + 1
+                x = self.causalConv(x,filter_shape = (last_conv,1,x._shape_as_list()[3],int(self.net_depth * 2)),name='conv',activation=activation_functions.relu)
+            
+            ###################################################################
+            
+            # Skip connections to prevent gradient vanishing/explosion
+            ###################################################################
+            x_short1 = self.causalConv(x_short1[:, -x._shape_as_list()[1]:, :, :],filter_shape = (1,1,x_short1._shape_as_list()[3],x._shape_as_list()[3]),activation=activation_functions.linear)
+            x_short2 = self.causalConv(x_short2[:, -x._shape_as_list()[1]:, :, :],filter_shape = (1,1,x_short2._shape_as_list()[3],x._shape_as_list()[3]),activation=activation_functions.linear)
+            x_short3 = self.causalConv(x_short3[:, -x._shape_as_list()[1]:, :, :],filter_shape = (1,1,x_short3._shape_as_list()[3],x._shape_as_list()[3]),activation=activation_functions.linear)
+            x_short4 = self.causalConv(x_short4[:, -x._shape_as_list()[1]:, :, :],filter_shape = (1,1,x_short4._shape_as_list()[3],x._shape_as_list()[3]),activation=activation_functions.linear)
+            x_short5 = self.causalConv(x_short5[:, -x._shape_as_list()[1]:, :, :],filter_shape = (1,1,x_short5._shape_as_list()[3],x._shape_as_list()[3]),activation=activation_functions.linear)
+            
+            x = x + x_short1 + x_short2 + x_short3 + x_short4 + x_short5
             x = tf.nn.relu(x)
             
-            ###################################################################
-
             
-            # waveCorr block 2
-            ###################################################################    
-
-            x_short3 = x
-            x = self.dilatedCausalConv(x,filter_shape=(kernel_size,1,x._shape_as_list()[3],int(self.net_depth * 2)),name='wave3',dilation=2)
-            x = tf.nn.dropout(x, rate=1 - keep_prob, seed=self.seed)
-            
-            x = self.dilatedCausalConv(x,filter_shape=(kernel_size,1,x._shape_as_list()[3],int(self.net_depth * 2)),name='wave4',dilation=2)
-            x = tf.nn.dropout(x, rate=1 - keep_prob, seed=self.seed)
-
-            x = self.corrLayer(x,'corr2')
-            
-            xx = self.causalConv(x_short3[:, 8:, :, :],filter_shape = (1,1,x_short3._shape_as_list()[3],x._shape_as_list()[3]),name='short3',activation=activation_functions.linear)
-            x = x + xx
-            x = tf.nn.relu(x)
-            
-            ###################################################################
-
-            last_conv = self.lookback_window - 12
-            
-            if self.lookback_window > 28:
-                
-                last_conv = self.lookback_window - 28
-                
-                
-                # waveCorr block 3
-                ###################################################################
-                
-                x_short5 = x                
-                x = self.dilatedCausalConv(x,filter_shape=(kernel_size,1,x._shape_as_list()[3],int(self.net_depth * 2)),name='wave5',dilation=4)
-                x = tf.nn.dropout(x, rate=1 - keep_prob, seed=self.seed)
-                
-                x = self.dilatedCausalConv(x,filter_shape=(kernel_size,1,x._shape_as_list()[3],int(self.net_depth * 2)),name='wave6',dilation=4)
-                x = tf.nn.dropout(x, rate=1 - keep_prob, seed=self.seed)
-    
-                x = self.corrLayer(x,'corr3')
-                
-                xx = self.causalConv(x_short5[:, 16:, :, :],filter_shape = (1,1,x_short5._shape_as_list()[3],x._shape_as_list()[3]),name='short5',activation=activation_functions.linear)
-                x = x + xx
-                x = tf.nn.relu(x)   
-                
-                ###################################################################
-            
-
-            
-            # The causal conv layer and the skip connections
-            ###################################################################
-            
-            x = self.causalConv(x,filter_shape = (last_conv,1,x._shape_as_list()[3],int(self.net_depth * 2)),name='conv',activation=activation_functions.relu)
-            
-            x_short1 = self.causalConv(x_short1[:, -x._shape_as_list()[1]:, :, :],filter_shape = (1,1,x_short1._shape_as_list()[3],x._shape_as_list()[3]),name='',activation=activation_functions.linear)            
-            
-            x_short3 = self.causalConv(x_short3[:, -x._shape_as_list()[1]:, :, :],filter_shape = (1,1,x_short3._shape_as_list()[3],x._shape_as_list()[3]),name='',activation=activation_functions.linear)
-            x = x + x_short1+ x_short3
-
-            if self.lookback_window > 28:
-                x_short5 = self.causalConv(x_short5[:, -x._shape_as_list()[1]:, :, :],filter_shape = (1,1,x_short5._shape_as_list()[3],x._shape_as_list()[3]),name='',activation=activation_functions.linear)                
-                x = x + x_short5
-
-
-            x = tf.nn.relu(x)
-            
-            ###################################################################
-            
-            # Decision making module
+            # Decision making module (if RNN = True the action on each period are considered as part of the state for the next period action)
             ###################################################################
             if self.RNN == False:
                 x = tf.concat([x, wIn_exp[:, -self.planning_horizon:, :, :]], 3)

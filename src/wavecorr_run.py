@@ -16,13 +16,13 @@ import numpy as np
 
 ###############################################################################
 
-dataset_name = 'can' # possible values: can, us, covid
+dataset_name = 'us' # possible values: can, us, covid
 trainSetLen = 2766 # For can and us data sets: 2766, For covid data set: 1967
 number_of_stocks = 30 # The number of stocks to be loaded from the assigned data set
 tradeFee = 0 # The commission rate
 constrain_action = 0 # 0: No constraint on the maximum weight allocation, 1: With constraint
 maxStockWeight = 0.25 # The maximum weight allocated to each individual asset in case of constrain_action = 1
-network_model = 'cs'# The model to use. Possible values: waveCorr, cs, eiie
+network_model = 'waveCorr'# The model to use. Possible values: waveCorr, cs, eiie
 restoreSavedModel = False # True: restores a previously saved model
 number_of_experiments = 10
 train_mode = 1 # 1: Experiments with different seeds
@@ -37,11 +37,11 @@ train_mode = 1 # 1: Experiments with different seeds
 
 epochs = 5000 # The number of epochs
 learningRate = 5e-5 # The learning rate of the algorithm
-decayRate = 0.9999 # The exponential decay rate
+decayRate = 0.99999 # The exponential decay rate
 minimmumRate = 1e-5 # The lower bound of the learning rate in case of decayRate < 1
 minibatchSize = 1 # The size of each minibatch. The case of minibatchSize = 1 is explained in the paper and provides the highest efficiency of training
 lookback_window = 32 # The length of historical window of prices used for training the model
-planning_horizon = 32 # The horizon on which the SR is computed
+planning_horizon = 64 # The horizon on which the SR is computed
 seed = 1111 # Seed value used for initialization of all random values throughout the code
 net_depth = 8 # The number of channels in the waveCorr architecture
 regularizer_multiplier=1e-6 # Regularization coefficient to penalize the objective function to not overfit
