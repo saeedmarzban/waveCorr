@@ -12,3 +12,8 @@ The architecture of the network is based on waveNet as follows:
 
 ![residualConnection](readmefiles/residualConnection.png)
 
+# Comparing with benchmarks
+
+![ReturnsComparison_waveCorr](readmefiles/ReturnsComparison_waveCorr.png)
+
+![ReturnsComparison_cs](readmefiles/ReturnsComparison_cs.png)
