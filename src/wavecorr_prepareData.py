@@ -17,8 +17,6 @@ import pandas as pd
 # path = 'share/FinML/usa/preprocessedData/selected/'
 # path = 'share/FinML/canada/preprocessedData/newData/'
 
-# client =  boto3.client('s3',aws_access_key_id="AKIASU6LMKM3SGCWBRND", aws_secret_access_key="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")
-# resource =  boto3.resource('s3',aws_access_key_id="AKIASU6LMKM3SGCWBRND", aws_secret_access_key="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")
 # assets = client.list_objects(Bucket='evovest', Prefix=path,Delimiter='/')
 # assets = [os.path.basename(i['Key']) for i in assets['Contents']]
 # assets = assets[1:]
