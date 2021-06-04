@@ -12,16 +12,3 @@ The architecture of the network is based on waveNet as follows:
 
 ![residualConnection](readmefiles/residualConnection.png)
 
-# Comparing with benchmarks- with transaction costs
-
-![ReturnsComparison](readmefiles/CA/ReturnsComparison.png)
-
-![ReturnsComparison](readmefiles/US/ReturnsComparison.png)
-
-![ReturnsComparison](readmefiles/COVID/ReturnsComparison.png)
-
-# Comparing with benchmarks- Permutation
-
-![ReturnsComparison_waveCorr](readmefiles/permutation/ReturnsComparison_waveCorr.png)
-
-![ReturnsComparison_cs](readmefiles/permutation/ReturnsComparison_cs.png)

@@ -2,7 +2,7 @@
 """
 Created on Mon May 31 13:28:29 2021
 
-@author: Saeed Marzban
+@author: ---
 """
 
 import numpy as np
@@ -112,7 +112,10 @@ class neuralNetwork:
             x = tf.concat([x, wIn_exp[:, -self.planning_horizon:, :, :]], 3)
             
             x = self.causalConv(x,filter_shape = (1,1,x._shape_as_list()[3],1),activation=activation_functions.linear)
-
+            
+            # Decision making module
+            ###################################################################
+            
             action = tf.nn.softmax(x, axis=2)            
             mu_norm = tf.reduce_sum(tf.abs(tf.subtract(action, wIn_exp[:, -self.planning_horizon:, :, :])), axis=2)
             mu = 1 - mu_norm * self.tradeFee
@@ -129,12 +132,10 @@ class neuralNetwork:
         for iii in range(self.number_of_stocks):
             if iii == 0:
                 xx = tf.concat([tf.expand_dims(inputTensor[:,:,iii,:],2),inputTensor],axis=2)
-                xx = tf.nn.dropout(xx, rate=1 - keep_prob, seed=self.seed)
                 out = self.causalConv(xx,filter_shape = (1, self.number_of_stocks+1,xx._shape_as_list()[3],1),name=name,reuse=True)
 
             else:
                 xx = tf.concat([tf.expand_dims(inputTensor[:,:,iii,:],2),inputTensor],axis=2)
-                xx = tf.nn.dropout(xx, rate=1 - keep_prob, seed=self.seed)
                 x_corr = self.causalConv(xx,filter_shape = (1, self.number_of_stocks+1,xx._shape_as_list()[3],1),name=name,reuse=True)
                 out = tf.concat([out, x_corr], 2)
         
@@ -272,6 +273,9 @@ class neuralNetwork:
             x2 = self.correlation_net(mIn, keep_prob, is_train)
             x = tf.concat([x1, x2], 3)
             
+            # Decision making module            
+            ###################################################################
+            
             x = tf.concat([x, wIn_exp[:, -self.planning_horizon:, :, :]], 3)
             x_action = self.causalConv(x,filter_shape = (1,1,x._shape_as_list()[3],1),name='',activation=activation_functions.linear)
             action = tf.nn.softmax(x_action, axis=2)
@@ -300,7 +304,6 @@ class neuralNetwork:
             self.initializeNN([1, 1, x._shape_as_list()[3] + outputchannels, outputchannels],name='lstmGate_' + unit_num,reuse=False)
             
             H = 0
-
 
             for i in range(self.lookback_window + self.planning_horizon - 1):
                 input = x[:, i, :, :]
@@ -343,8 +346,7 @@ class neuralNetwork:
         with tf.name_scope(self.scope):
             x = mIn
 
-            for i in range(1):
-                x = self.lstm_cell(x, i)
+            x = self.lstm_cell(x, 1)
 
             x = x[:, -self.planning_horizon:, :, :]
 

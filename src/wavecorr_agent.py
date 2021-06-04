@@ -2,7 +2,7 @@
 """
 Created on Mon May 31 13:19:19 2021
 
-@author: Saeed Marzban
+@author: ---
 """
 import numpy as np
 import pandas as pd
@@ -14,12 +14,12 @@ from wavecorr_network import neuralNetwork
 
 
 class agent_manager:
-    def __init__(self,x,y,learningRate,decayRate,minimmumRate,
+    def __init__(self,dataset_name,x,y,learningRate,decayRate,minimmumRate,
                  minibatchSize,epochs,number_of_stocks,lookback_window,planning_horizon,
                  tradeFee,seed,constrain_action=False,maxStockWeight=.25,network_model='eiie',
                  net_depth=4,regularizer_multiplier=1e-6,RNN=True,keep_prob_value=.5):
 
-        
+        self.dataset_name = dataset_name
         self.learningRate = np.array([learningRate])
         self.decayRate = decayRate
         self.minimmumRate = minimmumRate
@@ -186,26 +186,30 @@ class agent_manager:
     
 
     def train_test(self, sess, x_inTensor, rates,x_dates, trainSetLen, saveModel=False,
-                   planning_horizon=30, number_of_stocks=10,restoreSavedModel=False,off_policy=False):
+                   planning_horizon=30, number_of_stocks=10,restoreSavedModel=False,off_policy=False,perm=1):
 
         
         # Path to save the model and results
-        
-        path = 'results/'+str(self.network_model)+'_'+str(self.seed)
-        
+        path = 'results/'
+        path += str(self.dataset_name)
+        path += '_' + str(self.network_model)
+        path += '_' + str(self.number_of_stocks) + 'stocks'
+        path += '_' + 'seed' + str(self.seed)
+        path += '_' + 'permutation' + str(perm)
         
         if restoreSavedModel == True:
-            try:
+            if (os.path.exists(path)):
                 self.saver.restore(sess, path + "/model.ckpt")
                 self.pvm = np.loadtxt(path + '/pvm.csv', delimiter=',')
                 self.epochs = 1
                 print('------------------------------------')
                 print("Model restored.")
                 print('------------------------------------')
-            except:
+            else:
                 print('------------------------------------')
                 print('The model does not exist!')
                 print('------------------------------------')
+                return
         else:
             sess.run(self.init_op)
             self.initPvm(rates)        
@@ -278,7 +282,7 @@ class agent_manager:
                 self.prepare_for_saving(x_dates,trainSetLen)
                 track_test_train = np.append(np.expand_dims(track_train,axis=1),np.expand_dims(track_test,axis=1),axis=1)
                 self.save_results(track_test_train,sess,path)
-                self.compute_performance_measures(rates)
+                self.compute_performance_measures(rates,trainSetLen)
                 
                 # Save the model
                 if restoreSavedModel == False:
@@ -288,7 +292,7 @@ class agent_manager:
         print('Training is over')
         print('------------------------------------')
 
-    def compute_performance_measures(self,rates=[]):
+    def compute_performance_measures(self,rates,trainSetLen):
         # comptue different measures
         self.annual_return = self.APV[-1, 1] ** (252 / len(self.APV)) - 1
         self.annual_return_EW = self.APV[-1, 2] ** (252 / len(self.APV)) - 1
@@ -306,7 +310,7 @@ class agent_manager:
         self.daily_hit_rate = sum([lst_ret[i] > lst_ret_EW[i] for i in range(len(lst_ret))]) / len(lst_ret)
         self.trackingError = np.std(np.diff(np.log(self.APV[:, 1].tolist()), n=1, axis=0)
                                     - np.diff(np.log(self.APV[:, 2].tolist()), n=1, axis=0)) * np.sqrt(252)
-        self.portfolio_turnover = np.sum(np.linalg.norm(np.subtract(self.weightsMatrix[1:,1:],self.weightsMatrix[0:-1,1:]),ord=1,axis=1))/(2*(len(self.weightsMatrix)-1))
+        self.portfolio_turnover = self.compute_portfolio_turnover(self.pvm[trainSetLen:,:],rates[trainSetLen:,:])
 
 
         res_list =     ['Annual return   :' + str(self.annual_return)]
@@ -328,22 +332,20 @@ class agent_manager:
         test_dates = np.expand_dims(x_dates[trainSetLen:], axis=1)
         self.APV = np.append(test_dates, self.APV, axis=1)
         self.weightsMatrix = np.append(test_dates, self.pvm[trainSetLen:], axis=1)
+        
+    def compute_portfolio_turnover(self,w,rates):        
+        w_prime = (rates * w)/np.sum(rates * w,1,keepdims=True)
+        mu = self.calculateMu(np.expand_dims(w_prime,0),np.expand_dims(w,0))
+        portfolio_turnover = np.sum(np.linalg.norm(np.subtract(w_prime[0:-1, :],
+                                                                  w[1:, :] * np.expand_dims(
+                                                                      mu[0, 1:], 1)), ord=1, axis=1)) / (2 * (len(w[1:, :]) - 1))
+        return portfolio_turnover
+                                                                                      
+        
 
     def print_train_valid_res(self,epoch,train_APV,test_APV,trainSetLen,rates):
         print('epoch:' + str(epoch))
-        portfolio_turnover = np.sum(np.linalg.norm(np.subtract(self.pvm[trainSetLen+1:, :],
-                                                                self.pvm[trainSetLen:-1, :]), ord=1, axis=1)) / (2*(len(self.pvm[trainSetLen+1:, :]) - 1))
-
-        # Compute EW portfolio turnover
-        #######################################################
-        # EW_weights = np.ones(self.pvm.shape)/self.number_of_stocks
-        # w_prime = (rates * EW_weights)/np.sum(rates * EW_weights,1,keepdims=True)
-        # mu = self.calculateMu(np.expand_dims(w_prime,0),np.expand_dims(EW_weights,0))
-        # portfolio_turnover_EW = np.sum(np.linalg.norm(np.subtract(w_prime[trainSetLen:-1, :],
-        #                                                           EW_weights[trainSetLen + 1:, :] * np.expand_dims(
-        #                                                               mu[0, trainSetLen + 1:], 1)), ord=1, axis=1)) / (
-        #                                     2 * (len(EW_weights[trainSetLen + 1:, :]) - 1))
-        #######################################################
+        portfolio_turnover = self.compute_portfolio_turnover(self.pvm[trainSetLen:,:],rates[trainSetLen:,:])
         
         for i in range(1, 11):
             print(np.round(np.sort(self.pvm[-i * 50])[-10:], 2))
@@ -367,26 +369,6 @@ class agent_manager:
         # immediateReward = reward - mu
         self.APV_EW=np.cumprod(immediateReward)
 
-    def EG(self, x_inTensor, rates, trainSetLen,x_dates):
-        self.initPvm(rates)
-        self.pvm[trainSetLen,:] = 1/self.number_of_stocks
-        eta=1
-        for t_ in range(trainSetLen+1,rates.shape[0]):
-            for i in range(self.number_of_stocks):
-                nr = (self.pvm[t_ - 1, i] * np.exp(eta * rates[t_-1, i, 0] / np.dot(self.pvm[t_ - 1, :], rates[t_-1, :, 0])))
-                dr = np.sum((self.pvm[t_ - 1,:] * np.exp(eta * rates[t_-1, :, 0] / np.dot(self.pvm[t_ - 1, :], rates[t_-1, :, 0]))))
-                self.pvm[t_, i] = nr / dr
-
-        wPrime = self.updateRateShift(np.expand_dims(self.pvm[trainSetLen:], axis=0), np.expand_dims(rates[trainSetLen:,:,0], axis=0))
-        mu = self.calculateMu(wPrime, np.expand_dims(self.pvm[trainSetLen:], 0))
-        reward = np.sum(np.multiply(self.pvm[trainSetLen:], rates[trainSetLen:,:,0]), axis=1)
-        immediateReward = reward * np.squeeze(mu, 0)
-        self.pvm_reward[trainSetLen:] = immediateReward
-        self.APV = np.cumprod(self.pvm_reward[trainSetLen:])
-        self.equally_weighted(x_inTensor, rates[:,:,0], trainSetLen)
-        self.prepare_for_saving(x_dates, trainSetLen)
-        self.compute_performance_measures()
-
     def save_results(self,track_test_train,sess,path):
         # suffixName = str(self.tradeFee) + '_'  + str(self.learningRate[0]) + '_' + str(self.minibatchSize) +\
         #              '_' + str(self.lookback_window)+ '_' + '_' + str(self.epochs)+'_' + str(self.seed)
@@ -406,20 +388,3 @@ class agent_manager:
         pd.DataFrame(self.weightsMatrix).to_csv(path + '/'+fileTosave_weights, index=False,header=False)
         pd.DataFrame(track_test_train).to_csv(path + '/'+fileTosave_track_test_train, index=False,header=False)  
         
-        
-
-    def getValue(self):
-        return self.value
-
-    def getWeights(self):
-        return self.weights[:]
-
-    def getValues(self):
-        return self.values
-
-    def setValue(self, value):
-        self.value = value
-
-    # Assign new portfolio weights
-    def setWeights(self, weights):
-        self.weights = weights[:]
