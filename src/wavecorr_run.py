@@ -2,7 +2,7 @@
 """
 Created on Mon May 31 12:44:24 2021
 
-@author: ---
+@author: Saeed Marzban
 """
 
 # Loading required packages and dependecies
@@ -16,9 +16,9 @@ import numpy as np
 
 ###############################################################################
 
-dataset_name = 'covid' # possible values: can, us, covid
+dataset_name = 'can' # possible values: can, us, covid
 number_of_stocks = 30 # The number of stocks to be loaded from the assigned data set
-tradeFee = 0 # The commission rate
+tradeFee = 0.0005 # The commission rate
 constrain_action = 0 # 0: No constraint on the maximum weight allocation, 1: With constraint
 maxStockWeight = 0.25 # The maximum weight allocated to each individual asset in case of constrain_action = 1
 network_model = 'waveCorr'# The model to use. Possible values: waveCorr, cs, eiie
