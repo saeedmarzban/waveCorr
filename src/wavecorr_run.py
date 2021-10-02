@@ -11,12 +11,14 @@ from wavecorr_enum import normalization_mode
 from wavecorr_agent import agent_manager
 import tensorflow as tf
 import numpy as np
+import argparse
+
+parser = argparse.ArgumentParser()
 
 # Parameters of the portfolio management problem
 
 ###############################################################################
-
-dataset_name = 'can' # possible values: can, us, covid
+parser.add_argument("--dataset_name",default='can') # possible values: can, us, covid
 number_of_stocks = 50 # The number of stocks to be loaded from the assigned data set
 tradeFee = 0.0005 # The commission rate
 constrain_action = 0 # 0: No constraint on the maximum weight allocation, 1: With constraint
@@ -27,13 +29,18 @@ number_of_experiments = 10
 train_mode = 1 # 1: Experiments with different seeds
                # 2: Experiments with different permutation of stocks
 
+
+# Assign parameters
+#########################################################################
+args = parser.parse_args()
+dataset_name = str(args.dataset_name)
+
 # For can and us data sets: trainSetLen = 2766, For covid data set: trainSetLen = 1967
 if dataset_name == 'can' or dataset_name == 'us':
     trainSetLen = 2766
 else:
     trainSetLen = 1967
 ###############################################################################
-
 
 # Hyperparameters of the Neural Networks
 
