@@ -23,7 +23,7 @@ number_of_stocks = 50 # The number of stocks to be loaded from the assigned data
 tradeFee = 0.0005 # The commission rate
 constrain_action = 0 # 0: No constraint on the maximum weight allocation, 1: With constraint
 maxStockWeight = 0.25 # The maximum weight allocated to each individual asset in case of constrain_action = 1
-network_model = 'waveCorr'# The model to use. Possible values: waveCorr, cs, eiie
+parser.add_argument("--network_model",default='waveCorr')# The model to use. Possible values: waveCorr, cs, eiie
 restoreSavedModel = False # True: restores a previously saved model
 number_of_experiments = 10
 train_mode = 1 # 1: Experiments with different seeds
@@ -34,6 +34,8 @@ train_mode = 1 # 1: Experiments with different seeds
 #########################################################################
 args = parser.parse_args()
 dataset_name = str(args.dataset_name)
+network_model = str(args.network_model)
+
 
 # For can and us data sets: trainSetLen = 2766, For covid data set: trainSetLen = 1967
 if dataset_name == 'can' or dataset_name == 'us':
