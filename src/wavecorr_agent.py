@@ -59,8 +59,10 @@ class agent_manager:
             mIn, wIn, y, actions_lst, reward, keep_prob, is_train = self.NN.waveCorr(inputTensor, rates)
         elif self.network_model == 'eiie':
             mIn, wIn, y, actions_lst, reward, keep_prob, is_train = self.NN.eiie(inputTensor, rates)
-        elif self.network_model == 'cs':
-            mIn, wIn, y, actions_lst, reward, keep_prob, is_train = self.NN.cs(inputTensor, rates)
+        elif self.network_model == 'cs_LSTM_CNN':
+            mIn, wIn, y, actions_lst, reward, keep_prob, is_train = self.NN.cs_LSTM_CNN(inputTensor, rates)
+        elif self.network_model == 'cs_CNN':
+            mIn, wIn, y, actions_lst, reward, keep_prob, is_train = self.NN.cs_CNN(inputTensor, rates)
             
         return mIn, wIn, y, actions_lst, reward, keep_prob, is_train
             

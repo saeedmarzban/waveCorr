@@ -257,7 +257,7 @@ class neuralNetwork:
 
             return mIn, wIn, y, tf.squeeze(action, 3), reward, keep_prob, is_train
 
-    def cs(self, inputTensor, rates):
+    def cs_LSTM_CNN(self, inputTensor, rates):
         with tf.name_scope(self.scope):            
             is_train = tf.compat.v1.placeholder(tf.bool, name="is_train")
             keep_prob = tf.compat.v1.placeholder(tf.float32)
@@ -281,6 +281,39 @@ class neuralNetwork:
             action = tf.nn.softmax(x_action, axis=2)
             mu_norm = tf.reduce_sum(tf.abs(tf.subtract(action, wIn_exp[:, -self.planning_horizon:, :, :])), axis=2)
             
+            mu = 1 - mu_norm * self.tradeFee
+            ret_per_stock = tf.multiply(action, y_exp)
+            cum_ret = tf.reduce_sum(ret_per_stock, axis=2, keepdims=False)
+            cum_ret_tradefee = tf.multiply(cum_ret, mu)
+            reward = tf.log(cum_ret_tradefee)
+
+            return mIn, wIn, y, tf.squeeze(action, 3), reward, keep_prob, is_train
+
+    def cs_CNN(self, inputTensor, rates):
+        with tf.name_scope(self.scope):
+            is_train = tf.compat.v1.placeholder(tf.bool, name="is_train")
+            keep_prob = tf.compat.v1.placeholder(tf.float32)
+            mIn = tf.compat.v1.placeholder(tf.float32,
+                                           [self.minibatchSize, self.lookback_window + self.planning_horizon - 1,
+                                            self.number_of_stocks, inputTensor.shape[2]])
+            wIn = tf.compat.v1.placeholder(tf.float32,
+                                           [self.minibatchSize, self.lookback_window + self.planning_horizon - 1,
+                                            self.number_of_stocks])
+            wIn_exp = tf.expand_dims(wIn, 3)
+            y = tf.compat.v1.placeholder(tf.float32, [self.minibatchSize, self.planning_horizon, self.number_of_stocks])
+            y_exp = tf.expand_dims(y, 3)
+
+            x = self.correlation_net(mIn, keep_prob, is_train)
+
+            # Decision making module
+            ###################################################################
+
+            x = tf.concat([x, wIn_exp[:, -self.planning_horizon:, :, :]], 3)
+            x_action = self.causalConv(x, filter_shape=(1, 1, x._shape_as_list()[3], 1), name='',
+                                       activation=activation_functions.linear)
+            action = tf.nn.softmax(x_action, axis=2)
+            mu_norm = tf.reduce_sum(tf.abs(tf.subtract(action, wIn_exp[:, -self.planning_horizon:, :, :])), axis=2)
+
             mu = 1 - mu_norm * self.tradeFee
             ret_per_stock = tf.multiply(action, y_exp)
             cum_ret = tf.reduce_sum(ret_per_stock, axis=2, keepdims=False)

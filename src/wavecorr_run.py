@@ -23,7 +23,7 @@ number_of_stocks = 50 # The number of stocks to be loaded from the assigned data
 tradeFee = 0.0005 # The commission rate
 constrain_action = 0 # 0: No constraint on the maximum weight allocation, 1: With constraint
 maxStockWeight = 0.25 # The maximum weight allocated to each individual asset in case of constrain_action = 1
-parser.add_argument("--network_model",default='waveCorr')# The model to use. Possible values: waveCorr, cs, eiie
+parser.add_argument("--network_model",default='waveCorr')# The model to use. Possible values: waveCorr, cs_LSTM_CNN, cs_CNN, eiie
 restoreSavedModel = False # True: restores a previously saved model
 number_of_experiments = 10
 train_mode = 1 # 1: Experiments with different seeds
