@@ -17,7 +17,7 @@ import numpy as np
 ###############################################################################
 
 dataset_name = 'can' # possible values: can, us, covid
-number_of_stocks = 30 # The number of stocks to be loaded from the assigned data set
+number_of_stocks = 50 # The number of stocks to be loaded from the assigned data set
 tradeFee = 0.0005 # The commission rate
 constrain_action = 0 # 0: No constraint on the maximum weight allocation, 1: With constraint
 maxStockWeight = 0.25 # The maximum weight allocated to each individual asset in case of constrain_action = 1
@@ -39,9 +39,9 @@ else:
 
 ###############################################################################
 
-epochs = 5000 # The number of epochs
-learningRate = 5e-5 # The learning rate of the algorithm
-decayRate = 0.99999 # The exponential decay rate
+epochs = 1000 # The number of epochs
+learningRate = 1e-4 # The learning rate of the algorithm
+decayRate = 0.9999 # The exponential decay rate
 minimmumRate = 1e-5 # The lower bound of the learning rate in case of decayRate < 1
 minibatchSize = 1 # The size of each minibatch. The case of minibatchSize = 1 is explained in the paper and provides the highest efficiency of training
 lookback_window = 32 # The length of historical window of prices used for training the model
