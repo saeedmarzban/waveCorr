@@ -346,7 +346,8 @@ class neuralNetwork:
         with tf.name_scope(self.scope):
             x = mIn
 
-            x = self.lstm_cell(x, 1)
+            for i in range(4):
+                x = self.lstm_cell(x, i)
 
             x = x[:, -self.planning_horizon:, :, :]
 
