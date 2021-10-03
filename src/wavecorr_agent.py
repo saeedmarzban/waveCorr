@@ -287,8 +287,7 @@ class agent_manager:
                 self.compute_performance_measures(rates,trainSetLen)
                 
                 # Save the model
-                if restoreSavedModel == False:
-                    self.saver.save(sess, path + '/model.ckpt')
+                self.saver.save(sess, path + '/model.ckpt')
         
         print('------------------------------------')
         print('Training is over')
