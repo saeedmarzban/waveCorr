@@ -203,7 +203,7 @@ class agent_manager:
             if (os.path.exists(path)):
                 self.saver.restore(sess, path + "/model.ckpt")
                 self.pvm = np.loadtxt(path + '/pvm.csv', delimiter=',')
-                self.epochs = 1
+                # self.epochs = 1
                 print('------------------------------------')
                 print("Model restored.")
                 print('------------------------------------')

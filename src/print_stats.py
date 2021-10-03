@@ -12,19 +12,19 @@ import shutil
 path = 'C:\SAEED\HEC\Thesis\waveCorr\waveCorr\src/results/all_results/'
 
 # Copy all files in one folder
-################################
-# lst_sub = [x[0] for x in os.walk(path)]
-# lst_sub = lst_sub[1:]
-#
-# for folder_name in lst_sub:
-#     if folder_name.split('/')[-1] == 'all_results':
-#         continue
-#     else:
-#         for file_name in os.listdir(folder_name):
-#             if str(file_name).endswith('.csv'):
-#                 copy_from = folder_name + '/' + file_name
-#                 copy_to = path + 'all_results/' + folder_name.split('/')[-1] + '_' + file_name
-#                 shutil.copy(copy_from, copy_to)
+###############################
+lst_sub = [x[0] for x in os.walk(path)]
+lst_sub = lst_sub[1:]
+
+for folder_name in lst_sub:
+    if folder_name.split('/')[-1] == 'all_results':
+        continue
+    else:
+        for file_name in os.listdir(folder_name):
+            if str(file_name).endswith('.csv'):
+                copy_from = folder_name + '/' + file_name
+                copy_to = path + 'all_results/' + folder_name.split('/')[-1] + '_' + file_name
+                shutil.copy(copy_from, copy_to)
 
 
 
