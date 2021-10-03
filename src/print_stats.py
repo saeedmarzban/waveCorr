@@ -13,24 +13,24 @@ path = 'C:\SAEED\HEC\Thesis\waveCorr\waveCorr\src/results/all_results/'
 
 # Copy all files in one folder
 ###############################
-lst_sub = [x[0] for x in os.walk(path)]
-lst_sub = lst_sub[1:]
+# lst_sub = [x[0] for x in os.walk(path)]
+# lst_sub = lst_sub[1:]
 
-for folder_name in lst_sub:
-    if folder_name.split('/')[-1] == 'all_results':
-        continue
-    else:
-        for file_name in os.listdir(folder_name):
-            if str(file_name).endswith('.csv'):
-                copy_from = folder_name + '/' + file_name
-                copy_to = path + 'all_results/' + folder_name.split('/')[-1] + '_' + file_name
-                shutil.copy(copy_from, copy_to)
+# for folder_name in lst_sub:
+#     if folder_name.split('/')[-1] == 'all_results':
+#         continue
+#     else:
+#         for file_name in os.listdir(folder_name):
+#             if str(file_name).endswith('.csv'):
+#                 copy_from = folder_name + '/' + file_name
+#                 copy_to = path + 'all_results/' + folder_name.split('/')[-1] + '_' + file_name
+#                 shutil.copy(copy_from, copy_to)
 
 
 
 # cats_labels = ['Cost-sensitive']
 cats_labels = ['WaveCorr','CS-LSTM-CNN','CS-CNN','EIIE']
-data_set = 'covid'
+data_set = 'can'
 # cats_labels = ['eiie']
 # cats_labels = ['30 stocks','40 stocks','50 stocks']
 # cats = [1111]
