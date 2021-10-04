@@ -142,8 +142,7 @@ class neuralNetwork:
         
         outputTensor = tf.concat([inputTensor, out], 3)
         return outputTensor 
-    
-    
+
     def waveCorrBlock(self,x,kernel_size,depth,dilation,keep_prob,block_counter):
         
         x_short = tf.zeros(shape = x._shape_as_list())
@@ -169,7 +168,6 @@ class neuralNetwork:
             x = tf.nn.relu(x)
             
         return x , x_short
-    
     
     def waveCorr(self, inputTensor, rates):
         with tf.name_scope(self.scope):
@@ -379,7 +377,7 @@ class neuralNetwork:
         with tf.name_scope(self.scope):
             x = mIn
 
-            for i in range(4):
+            for i in range(2):
                 x = self.lstm_cell(x, i)
 
             x = x[:, -self.planning_horizon:, :, :]

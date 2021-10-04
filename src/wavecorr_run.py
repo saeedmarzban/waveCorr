@@ -24,7 +24,7 @@ tradeFee = 0.0005 # The commission rate
 constrain_action = 0 # 0: No constraint on the maximum weight allocation, 1: With constraint
 maxStockWeight = 0.25 # The maximum weight allocated to each individual asset in case of constrain_action = 1
 parser.add_argument("--network_model",default='waveCorr')# The model to use. Possible values: waveCorr, cs_LSTM_CNN, cs_CNN, eiie
-restoreSavedModel = True # True: restores a previously saved model
+restoreSavedModel = False # True: restores a previously saved model
 number_of_experiments = 10
 train_mode = 1 # 1: Experiments with different seeds
                # 2: Experiments with different permutation of stocks
@@ -48,8 +48,8 @@ else:
 
 ###############################################################################
 
-epochs = 1000 # The number of epochs
-learningRate = 1e-5 # The learning rate of the algorithm
+epochs = 3000 # The number of epochs
+learningRate = 1e-4 # The learning rate of the algorithm
 decayRate = 0.9999 # The exponential decay rate
 minimmumRate = 1e-5 # The lower bound of the learning rate in case of decayRate < 1
 minibatchSize = 1 # The size of each minibatch. The case of minibatchSize = 1 is explained in the paper and provides the highest efficiency of training
@@ -65,7 +65,7 @@ keep_prob_value=.5 # The probability ratio in the dropout layer of the model
 
 
 # load the data from the assigned data set
-data = loadInput(dataset_name,normalization_mode.no_norm,number_of_stocks)
+data = loadInput(dataset_name,normalization_mode.capped_norm,number_of_stocks)
 
 # Update the value of the number of stocks according to the number of successfully loaded stocks
 number_of_stocks = data.y.shape[1]

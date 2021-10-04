@@ -30,7 +30,7 @@ path = 'C:\SAEED\HEC\Thesis\waveCorr\waveCorr\src/results/all_results/'
 
 # cats_labels = ['Cost-sensitive']
 cats_labels = ['WaveCorr','CS-LSTM-CNN','CS-CNN','EIIE']
-data_set = 'can'
+data_set = 'covid'
 # cats_labels = ['eiie']
 # cats_labels = ['30 stocks','40 stocks','50 stocks']
 # cats = [1111]
